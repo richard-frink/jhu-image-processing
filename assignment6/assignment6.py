@@ -88,10 +88,13 @@ def create_path(image, path_traveled, output_path):
     if not os.path.exists(output_path):
         os.makedirs(output_path)
     
+    # some variable setup
     working_image = image.copy()
     first = True
     previous_point = None
 
+    # if it's our first iteration, save the point
+    # if not first, then we have two points, letwe will draw a line
     for point in path_traveled:
         if (not first):
             cv2.line(working_image, previous_point, point, color_list[0], 2)
@@ -106,10 +109,20 @@ def create_path(image, path_traveled, output_path):
 def main():
     read_inputs()
 
+    # build the tracking and pathing
     ds1_output, ds1_path = process_images(ds1_input)
     ds2_s1_output, ds2_s1_path = process_images(ds2_s1_input)
     ds2_s2_output, ds2_s2_path = process_images(ds2_s2_input)
 
+    #########################
+    # create the output files
+    #########################
+    # each folder will look like this
+    # dataset_output/000.jpg
+    # dataset_output/001.jpg
+    # ......
+    # dataset_output/227.jpg
+    # dataset_output/path_traveled.jpg
     create_output(ds1_output, "dataset1_output")
     create_path(ds1_output[-1], ds1_path, "dataset1_output")
     create_output(ds2_s1_output, "dataset2_scenario1_output")
