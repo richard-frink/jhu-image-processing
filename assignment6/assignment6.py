@@ -15,13 +15,13 @@ show_cross_hair = False # Don't show the cross hair
 def read_inputs():
     # dataset 1
     for x in range(2120, 2359):
-        ds1_input.append(cv2.imread("WalkByShop1front" + str(x).zfill(4) + ".jpg"))
+        ds1_input.append(cv2.imread("dataset1/WalkByShop1front" + str(x).zfill(4) + ".jpg"))
     # dataset 2 scenario 1
     for x in range(55, 82):
-        ds2_s1_input.append(cv2.imread(str(x).zfill(3) + ".jpg"))
+        ds2_s1_input.append(cv2.imread("dataset2/" + str(x).zfill(3) + ".jpg"))
     # dataset 2 scenario 2
     for x in range(200, 246):
-        ds2_s2_input.append(cv2.imread(str(x).zfill(3) + ".jpg"))
+        ds2_s2_input.append(cv2.imread("dataset2/" + str(x).zfill(3) + ".jpg"))
 
 
 def process_images(images):
@@ -65,7 +65,7 @@ def process_images(images):
             point_1 = (int(bbox[0]), int(bbox[1]))
             point_2 = (int(bbox[0] + bbox[2]), int(bbox[1] + bbox[3]))
             cv2.rectangle(image, point_1, point_2, color_list[i], 2)
-            points_traveled.append(point_1)
+            points_traveled.append((int(bbox[0] + bbox[2]/2), int(bbox[1] + bbox[3]/3)))
         
         # Write the frame to the output video file
         output_images.append(image)
@@ -95,10 +95,12 @@ def create_path(image, path_traveled, output_path):
     for point in path_traveled:
         if (not first):
             cv2.line(working_image, previous_point, point, color_list[0], 2)
+            previous_point = point
         else:
             previous_point = point
+            first = False
     
-    cv2.imwrite(output_path + "/path_traveled" + ".jpg", working_image)
+    cv2.imwrite(output_path + "/path_traveled.jpg", working_image)
 
 
 def main():
@@ -109,11 +111,11 @@ def main():
     ds2_s2_output, ds2_s2_path = process_images(ds2_s2_input)
 
     create_output(ds1_output, "dataset1_output")
-    create_path(ds1_output, ds1_path, "dataset1_output")
+    create_path(ds1_output[-1], ds1_path, "dataset1_output")
     create_output(ds2_s1_output, "dataset2_scenario1_output")
-    create_path(ds2_s1_output, ds2_s1_path, "dataset2_scenario1_output")
+    create_path(ds2_s1_output[-1], ds2_s1_path, "dataset2_scenario1_output")
     create_output(ds2_s2_output, "dataset2_scenario2_output")
-    create_path(ds2_s2_output, ds2_s2_path, "dataset2_scenario2_output")
+    create_path(ds2_s2_output[-1], ds2_s2_path, "dataset2_scenario2_output")
 
 
 main()
