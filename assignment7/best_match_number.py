@@ -1,6 +1,7 @@
 import sys
 from subprocess import *
 import numpy as N
+import cv2 as cv
 
 NUM_MATCHES = 12
 
@@ -92,9 +93,31 @@ def best_match(all_names, all_features, test_image_name, test_image_descriptor):
    group = sorted(group.items(), key=(lambda r: (r[1],r[0])))
    print("*** Finding best match for image %s ***" % (test_image_name))
    
+   images = []
    for k in range(NUM_MATCHES):
       if k < len(group):
          print(group[k][0] + ",")
+         images.append(group[k][0])
+   return images
+
+
+def get_images_by_filename(image_names):
+   images = []
+   for image in image_names:
+      img = cv.imread("dataset/" + image)
+      resized = cv.resize(img, (256,256), interpolation = cv.INTER_AREA)
+      images.append(resized)
+   return images
+
+
+def write_best_match_to_file(filename, images):
+   first_row = N.concatenate((images[0], images[1], images[2], images[3]), axis=1)
+   second_row = N.concatenate((images[4], images[5], images[6], images[7]), axis=1)
+   third_row = N.concatenate((images[8], images[9], images[10], images[11]), axis=1)
+   final_image = N.concatenate((first_row, second_row, third_row), axis=0)
+   
+   cv.imwrite(filename, final_image)
+
 
 #####################
 ##  Main Function  ##
@@ -120,7 +143,13 @@ def main():
          continue
 
    #Find best match
-   best_match(all_names, normalized_features, all_names[line_num], normalized_features[line_num,:])
+   closest_images = best_match(all_names, normalized_features, all_names[line_num], normalized_features[line_num,:])
+
+   # get images for closest images
+   closest_cv_images = get_images_by_filename(closest_images)
+
+   # output best match results
+   write_best_match_to_file("image_matching" + str(line_num) + ".jpg", closest_cv_images)
 
 
 main()

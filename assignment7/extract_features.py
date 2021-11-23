@@ -20,16 +20,28 @@ def create_csv_output(csv_lines, output_path):
 def calculate_image_features(path):
     image = read_input(path)
     comma = ","
-    csv_result = str(path) + str(comma)
+    csv_result = str(path)
 
     # ORB setup
     orb = cv.ORB_create(nfeatures=30)
     kp = orb.detect(image,None)
     kp, des = orb.compute(image, kp)
 
+    count = 1
+    descCount = 0
     for description_array in des:
         for description in description_array:
-            csv_result = str(csv_result) + str(description) + ","
+            descCount += 1
+            csv_result = str(csv_result) + str(comma) + str(description)
+        if count == 25: # cut it short, we need all of our objects to generate 30 points
+            return csv_result
+        count += 1
+    
+    # we need to make sure every image we analyze has the exact same number of descriptions
+    #   so we pad the ones that are lacking with 0s
+    while descCount < 800:
+        descCount += 1
+        csv_result = str(csv_result) + str(comma) + str(0)
     return csv_result
 
 
