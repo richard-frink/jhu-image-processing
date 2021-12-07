@@ -4,6 +4,7 @@ import cv2 as cv2
 import numpy as np
 import time
 import matplotlib.pyplot as plt
+from PIL import Image
 
 from collections import OrderedDict
 #from plane_creator import PlaneCreator
@@ -142,31 +143,62 @@ def set_left_title(title):
     plt.ylabel(title)
     plt.box(on=None)
 
-def visualize_sparse_outputs(sparse_outputs):
-    fig = plt.figure()#figsize=(11, 4))
-    fig.tight_layout()
+def visualize_sparse_outputs(sparse_outputs, output_path):
+    # get the image as decimal
+    image = sparse_outputs[('disp', 0)][0,0].numpy()/100
+    # plot the image
+    fig = plt.figure(figsize=(20.48, 6.4), dpi=100)
     
-    #plt.subplot(5, 4, 4)
-    disp = sparse_outputs[('disp', 0)][0,0].numpy()/100
-    plt.imshow(disp, cmap="inferno", vmin = np.percentile(disp, 1), vmax = np.percentile(disp, 99))
+    # turn it to a heatmap
+    plt.imshow(image, cmap="inferno")
+    # hide what we don't care about and save it to our path
+    plt.axis('off')
+    plt.savefig(output_path, bbox_inches='tight',pad_inches = 0)
+
+def process_and_save_depth_image(input_image, output_image_path, sparse_model):
+    # turn input image into a tensor
+    image = Image.fromarray(input_image)
+    img_tensor = to_torch(image)
     
-    fig.subplots_adjust(wspace=0.05, hspace=0)
-    plt.savefig("../../test.png")
+    # calculate the depth image
+    print("building " + output_image_path)
+    sparse_outputs = calculate_depth_outputs(sparse_model, img_tensor)
+    print(output_image_path + " finished")
+    # save the depth image
+    visualize_sparse_outputs(sparse_outputs, output_image_path)
 
 
 def main():
-    image_path = "../../datasets/hallway_test.png"
+    # input setup
+    video_folder = "datasets/"
+    input_videos = ["good_path", "ceilings", "floor", "right_wall"]
+    
+    # setup the tensor models that handle the depth processing
     dense_model, sparse_model = establish_encoder_decoder_params()
     load_model_weights(dense_model, sparse_model)
 
-    img = Image.open(image_path)
-    img_tensor = to_torch(img)
-    
-    plt.figure()
-    plt.imshow(img)
+    for video in input_videos:
+        video_file = video_folder + video + ".mp4"
+        capture = cv2.VideoCapture(video_file)
+        frame_count = 0
+        video_list = []
+        while capture.isOpened() and frame_count < 1:
+            ret, frame = capture.read()
 
-    sparse_outputs = calculate_depth_outputs(sparse_model, img_tensor)
-    visualize_sparse_outputs(sparse_outputs)
+            # build the output path
+            output_path = video_folder + video + "/" + str(frame_count) + ".png"
+            # find and save the depth image
+            process_and_save_depth_image(frame, output_path, sparse_model)
+            # read the file and save it to our video list
+            video_list.append(cv2.imread(output_path))
+            # increase frame count so we can build our output correctly
+            frame_count += 1
+        depth_video_name = video_folder + video + "/" + video + "_depth_video.avi"
+        depth_video = cv2.VideoWriter(depth_video_name,cv2.VideoWriter_fourcc(*'DIVX'), 15, (620, 2048))
+        for i in range(len(video_list)):
+            depth_video.write(video_list[i])
+        depth_video.release()
+
 
 
 main()
