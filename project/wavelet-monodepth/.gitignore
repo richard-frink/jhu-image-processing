@@ -127,16 +127,3 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
-
-# extras
-*.zip
-*.docx
-*.pdf
-project/datasets/base.mp4
-project/datasets/ceilings.mp4
-project/datasets/floor.mp4
-project/datasets/good_path.mp4
-project/datasets/right_wall.mp4
-project/wavelet-monodepth/KITTI/HR_Res50/adam.pth
-project/wavelet-monodepth/KITTI/HR_Res50/depth.pth
-project/wavelet-monodepth/KITTI/HR_Res50/encoder.pth
