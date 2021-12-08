@@ -204,4 +204,4 @@ if __name__ == '__main__':
     
     # multiprocessing of the remaining videos
     pool = multiprocessing.Pool(4)
-    o1, o2, o3, o4 = zip(*pool.map(process_video, input_videos))
+    zip(pool.map(process_video, input_videos))
