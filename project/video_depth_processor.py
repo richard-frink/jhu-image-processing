@@ -202,6 +202,6 @@ def process_video(video):
 if __name__ == '__main__':
     input_videos = ["good_path", "floor", "right_wall"]
     
-    # multiprocessing of the remaining videos
+    # multiprocessing of the videos
     pool = multiprocessing.Pool(3)
     zip(pool.map(process_video, input_videos))
