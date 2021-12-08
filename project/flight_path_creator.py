@@ -2,13 +2,13 @@ import multiprocessing
 from multiprocessing import Pool
 
 
-def process_video(name):
-    print(name)
+def process_depth_calculations(video_name):
+    print(video_name)
 
 
 if __name__ == "__main__":
-    input_videos = ["good_path", "ceilings", "floor", "right_wall"]
+    input_videos = ["good_path", "floor", "right_wall"]
     
     # multiprocessing of the remaining videos
-    pool = multiprocessing.Pool(4)
-    zip(pool.map(process_video, input_videos))
+    pool = multiprocessing.Pool(3)
+    zip(pool.map(process_depth_calculations, input_videos))
