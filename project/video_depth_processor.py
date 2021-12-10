@@ -1,37 +1,30 @@
+# system, image, math imports
 import sys
 import os
-import cv2 as cv2
-import numpy as np
 import time
-import matplotlib.pyplot as plt
+import cv2 as cv2
 from PIL import Image
+import numpy as np
+import matplotlib.pyplot as plt
 import multiprocessing
 from multiprocessing import Pool
-
 from collections import OrderedDict
-#from plane_creator import PlaneCreator
-#from depth_creator import DepthCreator
-#from video_interpreter import VideoInterpreter
 
+# machine learning imports
+from torchvision import transforms as T
+import torchvision.models as torch_models
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import numpy as np
-
-import torchvision.models as torch_models
 import torch.utils.model_zoo as model_zoo
-
-from PIL import Image
-
-from torchvision import transforms as T
 from pytorch_wavelets import IDWT
-
 from networks.decoders import DepthWaveProgressiveDecoder, SparseDepthWaveProgressiveDecoder
 from networks.encoders import *
 
 os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
 models_to_load = ["encoder", "depth"]
 
+# model needed for pytorch depth detection
 class DenseModel(nn.Module):
     def __init__(self, num_layers, output_scales, device="cpu"):
         super(DenseModel, self).__init__()
@@ -47,7 +40,7 @@ class DenseModel(nn.Module):
         outputs = self.models["depth"](features_encoder)
         return outputs
 
-    
+# model needed for pytorch depth detection
 class SparseModel(nn.Module):
     def __init__(self, num_layers, output_scales, sparse_scales, device="cpu"):
         super(SparseModel, self).__init__()
@@ -63,6 +56,7 @@ class SparseModel(nn.Module):
         features_encoder = self.models["encoder"](x)
         outputs = self.models["depth"](features_encoder, thresh_ratio, self.sparse_scales)
         return outputs
+
 
 def establish_encoder_decoder_params():
     # Encoder Parameters
@@ -81,12 +75,8 @@ def establish_encoder_decoder_params():
 
     return dense_model, sparse_model
 
-
+# depth prediction conversion for a sigmoiud function
 def disp_to_depth(disp, min_depth, max_depth):
-    """Convert network's sigmoid output into depth prediction
-    The formula for this conversion is given in the 'additional considerations'
-    section of the paper.
-    """
     min_disp = 1 / max_depth
     max_disp = 1 / min_depth
     scaled_disp = min_disp + (max_disp - min_disp) * disp
@@ -94,15 +84,12 @@ def disp_to_depth(disp, min_depth, max_depth):
     return scaled_disp, depth
 
 
+# load ML models
 def load_model(model, load_weights_folder):
-    """Load model(s) from disk
-    """
     load_weights_folder = os.path.expanduser(load_weights_folder)
-
     assert os.path.isdir(load_weights_folder), \
         "Cannot find folder {}".format(load_weights_folder)
     print("loading model from folder {}".format(load_weights_folder))
-
     for n in models_to_load:
         print("Loading {} weights...".format(n))
         path = os.path.join(load_weights_folder, "{}.pth".format(n))
@@ -112,6 +99,7 @@ def load_model(model, load_weights_folder):
         model_dict.update(pretrained_dict)
         model.models[n].load_state_dict(model_dict)
 
+# load model weights
 def load_model_weights(dense_model, sparse_model):
     model_path = "HR_Res50"
     print("Loading weights for Dense model")
@@ -123,6 +111,7 @@ def load_model_weights(dense_model, sparse_model):
     sparse_model.models["encoder"].eval()
     print("Done")
 
+# converting images to tensor for ML processing
 def to_torch(img):
     to_tensor = T.ToTensor()
     #resize = T.Resize((320, 1024), interpolation=T.InterpolationMode.BILINEAR, antialias=True)
@@ -131,21 +120,14 @@ def to_torch(img):
     #img_tensor = to_tensor(img).unsqueeze(0)
     return img_tensor
 
+# this creates the actual depth images
 def calculate_depth_outputs(s_model, img_tensor):
     threshold = 0.05
     with torch.no_grad():
         sparse_outputs = s_model(img_tensor, thresh_ratio=threshold)
     return sparse_outputs
 
-def set_left_title(title):
-    ax = plt.gca()
-    ax.xaxis.set_ticklabels([])
-    ax.yaxis.set_ticklabels([])
-    plt.tick_params(axis = "x", which = "both", bottom = False, top = False)
-    plt.tick_params(axis = "y", which = "both", left = False, right = False)
-    plt.ylabel(title)
-    plt.box(on=None)
-
+# convert the depth image model to an image save it
 def visualize_sparse_outputs(sparse_outputs, output_path):
     # get the image as decimal
     image = sparse_outputs[('disp', 0)][0,0].numpy()/100
@@ -177,6 +159,7 @@ def process_video(video):
     dense_model, sparse_model = establish_encoder_decoder_params()
     load_model_weights(dense_model, sparse_model)
 
+    # read through the .mp4 frames and calculate depth images
     video_file = video_folder + video + ".mp4"
     capture = cv2.VideoCapture(video_file)
     frame_count = 0
@@ -192,10 +175,11 @@ def process_video(video):
         video_list.append(cv2.imread(output_path))
         # increase frame count so we can build our output correctly
         frame_count += 1
-    depth_video_name = video_folder + video + "/" + video + "_depth_video.avi"
-    depth_video = cv2.VideoWriter(depth_video_name, cv2.VideoWriter_fourcc(*'DIVX'), 30, (620, 2048))
+    depth_video_name = video_folder + video + "/" + video + "_depth_video.mp4"
+    depth_video = cv2.VideoWriter(depth_video_name, cv2.VideoWriter_fourcc('m', 'p', '4', 'v'), 30, (2048, 640))
     for i in range(len(video_list)):
         depth_video.write(video_list[i])
+    # attempting to create a video of the depth images, i think this doesn't work right though
     depth_video.release()
 
 

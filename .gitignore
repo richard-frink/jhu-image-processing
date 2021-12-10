@@ -146,3 +146,9 @@ project/HR_Res50/depth1.pth
 project/HR_Res50/adam.pth
 project/HR_Res50/depth.pth
 project/HR_Res50/encoder.pth
+project/datasets/floor/final_comparison_*.png
+project/datasets/floor/final_comparison_*.mp4
+project/datasets/good_path/final_comparison_*.png
+project/datasets/good_path/final_comparison_*.mp4
+project/datasets/right_wall/final_comparison_*.png
+project/datasets/right_wall/final_comparison_*.mp4
